@@ -35,6 +35,10 @@ struct CameraViewWrapper: View {
                 
                 FlashlightControl()  // Flashlight brightness control
                 
+                //Slider(value: $cameraCapture.zoomFactor, in: 1.0...cameraCapture.videoMaxZoomFactor)
+                Slider(value: $cameraCapture.zoomFactor, in: 0.0...1.0)
+                    .padding()
+                
                 Button("Capture Photo") {
                     cameraCapture.capturePhoto()
                 }

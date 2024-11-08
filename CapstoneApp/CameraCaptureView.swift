@@ -12,11 +12,34 @@ final class CameraCaptureView: NSObject, ObservableObject, AVCapturePhotoCapture
     @Published var isImageCaptured = false
     @Published var capturedImage: UIImage?
     @Published var brightness: Float = 0.5
+    @Published var zoomFactor: CGFloat = 1.0 {  // Add zoom factor property
+           didSet {
+               applyZoom(zoomFactor)
+           }
+       }
     var captureSession: AVCaptureSession?
     var photoOutput: AVCapturePhotoOutput?
     var previewLayer: AVCaptureVideoPreviewLayer?
     
-
+    var videoMaxZoomFactor: CGFloat {
+        return AVCaptureDevice.default(for: .video)?.activeFormat.videoMaxZoomFactor ?? 1.0
+    }
+    
+    private func applyZoom(_ factor: CGFloat) {
+        guard let videoDevice = AVCaptureDevice.default(for: .video) else { return }
+        
+        let minZoom: CGFloat = 1.0
+        let maxZoom = videoMaxZoomFactor
+        let zoomFactor = pow(maxZoom / minZoom, factor) * minZoom
+        do {
+            try videoDevice.lockForConfiguration()
+           // videoDevice.videoZoomFactor = max(1.0, min(factor, videoDevice.activeFormat.videoMaxZoomFactor))  // Limit zoom within allowed range
+            videoDevice.videoZoomFactor = zoomFactor
+            videoDevice.unlockForConfiguration()
+        } catch {
+            print("Error setting zoom factor: \(error)")
+        }
+    }
 
     func setupCamera() {
         captureSession = AVCaptureSession()
