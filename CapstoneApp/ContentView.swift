@@ -6,18 +6,22 @@
 //
 
 import SwiftUI
+//import FirebaseAuth
 
 struct ContentView: View {
+    //@State private var isAuthenticated = Auth.auth().currentUser != nil
+    @State private var isAuthenticated = true  // Set to true to bypass login
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        if isAuthenticated {
+            //MainCaptureView(isAuthenticated: $isAuthenticated)
+        } else {
+            //SignInView(isAuthenticated: $isAuthenticated)
+            //MainCaptureView(isAuthenticated: $isAuthenticated)
         }
-        .padding()
     }
 }
+
 
 #Preview {
     ContentView()
