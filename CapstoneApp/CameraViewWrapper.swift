@@ -9,7 +9,15 @@ import SwiftUI
 import AVFoundation
 
 struct CameraViewWrapper: View {
-    @StateObject private var cameraCapture = CameraCaptureView() // Create an instance of CameraCaptureView
+    let selectedLens: String
+    //@StateObject private var cameraCapture = CameraCaptureView() // Create an instance of CameraCaptureView
+    // Initialize CameraCaptureView with the selected lens
+    @StateObject private var cameraCapture: CameraCaptureView
+    
+    init(selectedLens: String) {
+        self.selectedLens = selectedLens
+        _cameraCapture = StateObject(wrappedValue: CameraCaptureView(selectedLens: selectedLens))
+    }
     @State private var focusDistance: Float = 0.5
     
     var body: some View {
@@ -47,6 +55,7 @@ struct CameraViewWrapper: View {
                     .onChange(of: focusDistance) { newValue in
                     cameraCapture.setManualFocus(lensPosition: newValue)
                 }
+                /*
                 HStack {
                     // Individual buttons for each lens
                     Button("Ultra Wide (12mm)") {
@@ -59,6 +68,7 @@ struct CameraViewWrapper: View {
                         cameraCapture.switchToTelephotoLens()
                     }
                 }
+                 */
                 
                 Button("Capture Photo") {
                     cameraCapture.capturePhoto()

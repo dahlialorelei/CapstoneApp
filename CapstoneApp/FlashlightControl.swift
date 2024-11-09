@@ -24,6 +24,11 @@ struct FlashlightControl: View {
 
     func setTorchLevel(level: Float) {
         guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else { return }
+        
+        if device.deviceType == .builtInTelephotoCamera {
+            return
+        }
+        
         do {
             try device.lockForConfiguration()
             try device.setTorchModeOn(level: level)

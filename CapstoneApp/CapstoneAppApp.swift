@@ -11,7 +11,8 @@ import SwiftUI
 struct CapstoneAppApp: App {
     var body: some Scene {
         WindowGroup {
-            CameraViewWrapper()
+            //CameraViewWrapper()
+            LensSelectionView()
             //MainCaptureView(isAuthenticated: .constant(true))
             //MainCaptureView()
         }

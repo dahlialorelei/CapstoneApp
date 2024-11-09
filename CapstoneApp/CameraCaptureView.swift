@@ -13,7 +13,7 @@ final class CameraCaptureView: NSObject, ObservableObject, AVCapturePhotoCapture
     @Published var capturedImage: UIImage?
     @Published var brightness: Float = 0.5
     @Published var focusDistance: Float = 0.5
-    @Published var currentLens: String = "Wide Lens"
+    @Published var currentLens: String
     @Published var zoomFactor: CGFloat = 1.0 {  // Add zoom factor property
            didSet {
                applyZoom(zoomFactor)
@@ -24,6 +24,7 @@ final class CameraCaptureView: NSObject, ObservableObject, AVCapturePhotoCapture
     var photoOutput: AVCapturePhotoOutput?
     var previewLayer: AVCaptureVideoPreviewLayer?
     
+    private var selectedLens: String
     private var currentDevice: AVCaptureDevice?
     private var currentCameraPosition: AVCaptureDevice.Position = .back
     
@@ -31,16 +32,33 @@ final class CameraCaptureView: NSObject, ObservableObject, AVCapturePhotoCapture
         return AVCaptureDevice.default(for: .video)?.activeFormat.videoMaxZoomFactor ?? 1.0
     }
     
+    init(selectedLens: String) {
+       self.selectedLens = selectedLens
+       self.currentLens = selectedLens
+       super.init()
+       setupCamera()
+   }
+    /*
     override init() {
-            super.init()
-            setupCamera()
-        }
+        super.init()
+        setupCamera()
+    }
+     */
     
     private func applyZoom(_ factor: CGFloat) {
         guard let videoDevice = AVCaptureDevice.default(for: .video) else { return }
         
         let minZoom: CGFloat = 1.0
-        let maxZoom = videoMaxZoomFactor
+        //let maxZoom = videoMaxZoomFactor
+        //let maxZoom = videoDevice.activeFormat.videoMaxZoomFactor
+        let maxZoom: CGFloat
+        
+        if videoDevice.deviceType == .builtInTelephotoCamera {
+            maxZoom = min(3.0, videoDevice.activeFormat.videoMaxZoomFactor) // limit to 3x zoom for telephoto
+        } else {
+            maxZoom = videoMaxZoomFactor // Use default for other lenses
+        }
+        
         let zoomFactor = pow(maxZoom / minZoom, factor) * minZoom
         do {
             try videoDevice.lockForConfiguration()
@@ -55,16 +73,36 @@ final class CameraCaptureView: NSObject, ObservableObject, AVCapturePhotoCapture
     func setupCamera() {
         captureSession = AVCaptureSession()
         guard let captureSession = captureSession else { return }
+    
         
         captureSession.beginConfiguration()
         captureSession.sessionPreset = .photo
         
+        // Get the camera device based on the selected lens
+        switch currentLens {
+           case "Ultra Wide Lens":
+               currentDevice = getCamera(ofType: .builtInUltraWideCamera)
+           case "Wide Lens":
+               currentDevice = getCamera(ofType: .builtInWideAngleCamera)
+           case "Telephoto Lens":
+               currentDevice = getCamera(ofType: .builtInTelephotoCamera)
+           default:
+               currentDevice = getCamera(ofType: .builtInWideAngleCamera)
+           }
+        
+        /*
         // Get camera device based on selected zoom level (12mm, 24mm, 120mm)
         guard let videoDevice = getCamera(for: currentCameraPosition) else {
             print("No camera found for position \(currentCameraPosition)")
             return
         }
-        currentDevice = videoDevice
+         */
+        
+        guard let videoDevice = currentDevice else {
+           print("No camera found for selected lens")
+           return
+        }
+        //currentDevice = videoDevice
         
         //guard let videoDevice = AVCaptureDevice.default(for: .video) else { return }
         do {
@@ -99,6 +137,15 @@ final class CameraCaptureView: NSObject, ObservableObject, AVCapturePhotoCapture
     }
     
     
+    private func getCamera(ofType deviceType: AVCaptureDevice.DeviceType) -> AVCaptureDevice? {
+            return AVCaptureDevice.DiscoverySession(
+                deviceTypes: [deviceType],
+                mediaType: .video,
+                position: .back
+            ).devices.first
+        }
+    
+    /*
     private func getCamera(for position: AVCaptureDevice.Position) -> AVCaptureDevice? {
         let devices = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .builtInTelephotoCamera, .builtInUltraWideCamera],
                                                        mediaType: .video,
@@ -114,6 +161,9 @@ final class CameraCaptureView: NSObject, ObservableObject, AVCapturePhotoCapture
         }
         return nil
     }
+     */
+    
+    /*
         
     // Switch to the 12mm (ultra-wide) lens
     func switchToUltraWideLens() {
@@ -133,11 +183,21 @@ final class CameraCaptureView: NSObject, ObservableObject, AVCapturePhotoCapture
     
     // Switch to the 120mm (telephoto) lens
     func switchToTelephotoLens() {
-        stopSession()
-        currentLens = "Telephoto Lens (120mm)"
-        currentDevice = getCamera(for: .back) // Switch to telephoto lens
-        setupCamera()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+               if let telephotoLens = self.getCamera(for: .back), telephotoLens.deviceType == .builtInTelephotoCamera {
+                   self.currentLens = "Telephoto Lens (120mm)"
+                   self.currentDevice = telephotoLens
+                   self.setupCamera()
+                   print("Switched to Telephoto Lens (120mm) successfully.")
+               } else {
+                   print("Telephoto lens not available on this device or failed to configure.")
+                   // Optional fallback to another lens or notify the user
+                   self.currentLens = "Wide Lens (24mm)"
+                   self.switchToWideLens()
+               }
+           }
     }
+    */
     
     // Stop the capture session and remove the preview layer
    private func stopSession() {
