@@ -10,7 +10,8 @@ import AVFoundation
 
 struct CameraViewWrapper: View {
     @StateObject private var cameraCapture = CameraCaptureView() // Create an instance of CameraCaptureView
-
+    @State private var focusDistance: Float = 0.5
+    
     var body: some View {
         VStack {
             if let image = cameraCapture.capturedImage, cameraCapture.isImageCaptured {
@@ -30,7 +31,7 @@ struct CameraViewWrapper: View {
                 }
             } else {
                 CameraPreviewView(session: $cameraCapture.captureSession)
-                    //.frame(height: 300)
+                //.frame(height: 300)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 
                 FlashlightControl()  // Flashlight brightness control
@@ -38,6 +39,26 @@ struct CameraViewWrapper: View {
                 //Slider(value: $cameraCapture.zoomFactor, in: 1.0...cameraCapture.videoMaxZoomFactor)
                 Slider(value: $cameraCapture.zoomFactor, in: 0.0...1.0)
                     .padding()
+                
+                Text("Focus Distance: \(cameraCapture.focusDistance, specifier: "%.2f")")
+                    .padding()
+                
+                Slider(value: $focusDistance, in: 0.0...1.0)
+                    .onChange(of: focusDistance) { newValue in
+                    cameraCapture.setManualFocus(lensPosition: newValue)
+                }
+                HStack {
+                    // Individual buttons for each lens
+                    Button("Ultra Wide (12mm)") {
+                        cameraCapture.switchToUltraWideLens()
+                    }
+                    Button("Wide (24mm)") {
+                        cameraCapture.switchToWideLens()
+                    }
+                    Button("Telephoto (120mm)") {
+                        cameraCapture.switchToTelephotoLens()
+                    }
+                }
                 
                 Button("Capture Photo") {
                     cameraCapture.capturePhoto()
@@ -49,5 +70,6 @@ struct CameraViewWrapper: View {
                 cameraCapture.setupCamera() // Setup camera only if session is nil
             }
         }
+        
     }
 }
